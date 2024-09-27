@@ -1,0 +1,31 @@
+name: Generate SBOM and Submit to Dependency Track
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  generate-sbom:
+    runs-on: ubuntu-latest
+    name: generate_sbom
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Run Trivy SBOM
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          ignore-unfixed: true
+          output: 'sbom.cyclonedx.xml'
+          format: 'cyclonedx'
+
+      - name: Upload SBOM to Dependency Track
+        uses: DependencyTrack/gh-upload-sbom@v3
+        with:
+          protocol: 'https'
+          serverHostname: ${{ vars.MATHEO_DT_API_HOSTNAME }}
+          apiKey: ${{ secrets.MATHEO_DT_API_KEY }}
+          project: ${{ secrets.DT_PROJECT_ID }}
+          bomFilename: 'sbom.cyclonedx.xml'
